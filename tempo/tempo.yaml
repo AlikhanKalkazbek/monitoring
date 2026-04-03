@@ -1,8 +1,9 @@
 # tempo.yaml
 
-# This configuration sets up Tempo with local storage for development
+partition_ring_live_store: true
+stream_over_http_enabled: true
+multitenancy_enabled: true
 
-# Server configuration
 server:
   http_listen_port: 3200  # Port for HTTP API and Grafana queries
 
@@ -15,13 +16,15 @@ distributor:
           endpoint: "0.0.0.0:4317"  # OpenTelemetry gRPC endpoint
         http:
           endpoint: "0.0.0.0:4318"  # OpenTelemetry HTTP endpoint
-    jaeger:
-      protocols:
-        thrift_http:
-          endpoint: "0.0.0.0:14268"  # Jaeger Thrift HTTP endpoint
-        grpc:
-          endpoint: "0.0.0.0:14250"  # Jaeger gRPC endpoint
 
+backend_scheduler:
+  provider:
+    compaction:
+      compaction:
+        block_retention: 1h
+
+querier:
+  query_live_store: true
 # Ingester batches traces before writing to storage
 ingester:
   max_block_duration: 5m  # How long to batch traces before flushing
@@ -53,6 +56,11 @@ metrics_generator:
 
 # Query frontend handles search and trace queries
 query_frontend:
+  rf1_after: "1999-01-01T00:00:00Z"
   search:
     duration_slo: 5s
-    throughput_bytes_slo: 1.073741824e+09
+  mcp_server:
+    enabled: true
+
+usage_report:
+  reporting_enabled: false

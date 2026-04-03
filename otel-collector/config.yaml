@@ -9,6 +9,12 @@ receivers:
 processors:
   batch:
 
+  attributes/tempo-tenant:
+      actions:
+        - key: X-Scope-OrgID
+          from_attribute: abp.tenant_id
+          action: insert
+
 exporters:
   prometheus:
     endpoint: 0.0.0.0:8889
@@ -21,7 +27,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [attributes/tempo-tenant, batch]
       exporters: [otlp/tempo]
     metrics:
       receivers: [otlp]
