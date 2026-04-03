@@ -6,15 +6,29 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
+
 processors:
   batch:
+    timeout: 1s
+    send_batch_size: 1024
 
-  attributes/tempo-tenant:
-      actions:
-        - key: X-Scope-OrgID
-          from_attribute: abp.tenant_id
-          action: insert
+  # Group spans by tenant for better batching
+  # groupbytrace:
+  #   wait_duration: 1s
+  #   num_traces: 10000
 
+  # Add resource attribute that will be used for routing
+  # resource:
+  #   attributes:
+  #     - key: tenant.id
+  #       from_attribute: tenant.id
+  #       action: upsert
+
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+    
 exporters:
   prometheus:
     endpoint: 0.0.0.0:8889
@@ -23,11 +37,24 @@ exporters:
     tls:
       insecure: true
 
+  # Load balancing exporter that routes to Tempo with tenant-specific headers
+  # loadbalancing/tempo:
+  #   protocol:
+  #     otlp:
+  #       endpoint: tempo:4317
+  #       tls:
+  #         insecure: true
+  #   resolver:
+  #     static:
+  #       hostnames:
+  #         - tempo:4317
+  #   routing_key: "resource"  # Route based on resource attributes
+    
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [attributes/tempo-tenant, batch]
+      processors: [batch]
       exporters: [otlp/tempo]
     metrics:
       receivers: [otlp]

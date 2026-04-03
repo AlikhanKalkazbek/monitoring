@@ -1,8 +1,8 @@
 # tempo.yaml
 
-partition_ring_live_store: true
-stream_over_http_enabled: true
-multitenancy_enabled: true
+# partition_ring_live_store: true
+# stream_over_http_enabled: true
+# multitenancy_enabled: true
 
 server:
   http_listen_port: 3200  # Port for HTTP API and Grafana queries
@@ -24,7 +24,7 @@ backend_scheduler:
         block_retention: 1h
 
 querier:
-  query_live_store: true
+  query_live_store: false
 
 ingester:
   max_block_duration: 5m  # How long to batch traces before flushing
@@ -59,8 +59,9 @@ query_frontend:
   rf1_after: "1999-01-01T00:00:00Z"
   search:
     duration_slo: 5s
-  mcp_server:
-    enabled: true
+  # mcp_server:
+  #   enabled: true
+  # multi_tenant_queries_enabled: true
 
 usage_report:
   reporting_enabled: false

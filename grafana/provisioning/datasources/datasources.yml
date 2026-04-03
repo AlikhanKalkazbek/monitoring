@@ -24,6 +24,6 @@ datasources:
     basicAuth: false
     jsonData:
       httpMethod: GET
-      httpHeaderName1: X-Scope-OrgID
-    secureJsonData:
-      httpHeaderValue1: tenant-1|tenant-2
+    # httpHeaderName1: X-Scope-OrgID
+    # secureJsonData:
+    #   httpHeaderValue1: tenant-1|tenant-2
