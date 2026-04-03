@@ -7,7 +7,7 @@ datasources:
     access: proxy
     orgId: 1
     url: http://prometheus:9090
-    isDefault: false
+    isDefault: true
     editable: false
     basicAuth: false
     jsonData:
@@ -19,7 +19,7 @@ datasources:
     access: proxy
     orgId: 1
     url: http://tempo:3200
-    isDefault: true
+    isDefault: false
     editable: false
     basicAuth: false
     jsonData:
