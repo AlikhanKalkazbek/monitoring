@@ -1,0 +1,58 @@
+# tempo.yaml
+
+# This configuration sets up Tempo with local storage for development
+
+# Server configuration
+server:
+  http_listen_port: 3200  # Port for HTTP API and Grafana queries
+
+# Distributor receives traces from clients
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"  # OpenTelemetry gRPC endpoint
+        http:
+          endpoint: "0.0.0.0:4318"  # OpenTelemetry HTTP endpoint
+    jaeger:
+      protocols:
+        thrift_http:
+          endpoint: "0.0.0.0:14268"  # Jaeger Thrift HTTP endpoint
+        grpc:
+          endpoint: "0.0.0.0:14250"  # Jaeger gRPC endpoint
+
+# Ingester batches traces before writing to storage
+ingester:
+  max_block_duration: 5m  # How long to batch traces before flushing
+
+# Compactor optimizes trace storage
+compactor:
+  compaction:
+    block_retention: 48h  # How long to keep traces
+
+# Storage configuration using local filesystem
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal  # Write-ahead log location
+    local:
+      path: /var/tempo/blocks  # Block storage location
+
+# Metrics generator creates service graphs and span metrics
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+
+# Query frontend handles search and trace queries
+query_frontend:
+  search:
+    duration_slo: 5s
+    throughput_bytes_slo: 1.073741824e+09
