@@ -2,13 +2,13 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: otel-collector
+    restart: unless-stopped
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
     volumes:
       - ./otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml
     ports:
       - "4317:4317"
       - "4318:4318"
-      - "8889:8889"
     depends_on:
       - tempo
     networks:
@@ -17,18 +17,18 @@ services:
   tempo:
     image: grafana/tempo:2.10.3
     container_name: tempo
+    restart: unless-stopped
     command: ["-config.file=/etc/tempo.yaml", "-target=all"]
     volumes:
       - ./tempo/tempo.yaml:/etc/tempo.yaml
       - tempo_data:/var/tempo
-    ports:
-      - "3200:3200"
     networks:
       - monitoring
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    restart: unless-stopped
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --web.enable-remote-write-receiver
@@ -36,8 +36,6 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
-    ports:
-      - "9090:9090"
     depends_on:
       - otel-collector
     networks:
@@ -46,9 +44,10 @@ services:
   grafana:
     image: grafana/grafana:12.4.2
     container_name: grafana
+    restart: unless-stopped
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
@@ -64,12 +63,11 @@ services:
   node-exporter:
       image: prom/node-exporter:latest
       container_name: node-exporter
+      restart: unless-stopped
       command:
         - '--path.rootfs=/rootfs'
         - '--path.procfs=/host/proc'
         - '--path.sysfs=/host/sys'
-      ports:
-        - "9100:9100"
       networks:
         - monitoring
       pid: host
