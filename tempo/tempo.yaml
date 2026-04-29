@@ -17,12 +17,6 @@ distributor:
         http:
           endpoint: "0.0.0.0:4318"  # OpenTelemetry HTTP endpoint
 
-backend_scheduler:
-  provider:
-    compaction:
-      compaction:
-        block_retention: 1h
-
 querier:
   query_live_store: false
 

@@ -28,12 +28,20 @@ processors:
 extensions:
   health_check:
     endpoint: 0.0.0.0:13133
-    
+
 exporters:
   prometheus:
     endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true  # forwards resource attrs (deployment.environment, tenant.id, host.name) as Prometheus labels
+
   otlp/tempo:
     endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  otlp_http/loki:
+    endpoint: http://loki:3100/otlp
     tls:
       insecure: true
 
@@ -49,7 +57,7 @@ exporters:
   #       hostnames:
   #         - tempo:4317
   #   routing_key: "resource"  # Route based on resource attributes
-    
+
 service:
   pipelines:
     traces:
@@ -60,3 +68,7 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_http/loki]

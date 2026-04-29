@@ -24,6 +24,43 @@ datasources:
     basicAuth: false
     jsonData:
       httpMethod: GET
-    # httpHeaderName1: X-Scope-OrgID
-    # secureJsonData:
-    #   httpHeaderValue1: tenant-1|tenant-2
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: "-1m"
+        spanEndTimeShift: "1m"
+        # In customQuery mode, Grafana does NOT auto-append the trace id even
+        # with filterByTraceID: true — we must embed the variable ourselves.
+        # service_name=~".+" satisfies Loki's "no empty-compatible matcher" rule.
+        filterByTraceID: false
+        filterBySpanID: false
+        customQuery: true
+        query: '{service_name=~".+"} | trace_id="$${__trace.traceId}"'
+      serviceMap:
+        datasourceUid: prometheus
+
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    orgId: 1
+    url: http://loki:3100
+    isDefault: false
+    editable: false
+    basicAuth: false
+    jsonData:
+      # Link from a log line's trace id to the trace in Tempo.
+      # Two extractors: one for OTLP structured metadata (where MEL/OTel-exported
+      # logs put the trace id), another for the `trace=<id>` text written by the
+      # log4net PatternLayout converter on file-only logs.
+      derivedFields:
+        - name: TraceID
+          matcherType: label
+          matcherRegex: trace_id
+          url: '$${__value.raw}'
+          datasourceUid: tempo
+          urlDisplayLabel: 'View trace'
+        - name: TraceIDFromText
+          matcherRegex: 'trace=([a-f0-9]{32})'
+          url: '$${__value.raw}'
+          datasourceUid: tempo
+          urlDisplayLabel: 'View trace'
