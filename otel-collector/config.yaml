@@ -59,6 +59,15 @@ exporters:
   #   routing_key: "resource"  # Route based on resource attributes
 
 service:
+  telemetry:
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
   pipelines:
     traces:
       receivers: [otlp]
