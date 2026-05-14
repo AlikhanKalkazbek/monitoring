@@ -1,45 +1,38 @@
 # tempo.yaml
 
-# partition_ring_live_store: true
-# stream_over_http_enabled: true
-# multitenancy_enabled: true
-
 server:
-  http_listen_port: 3200  # Port for HTTP API and Grafana queries
+  http_listen_port: 3200
 
-# Distributor receives traces from clients
 distributor:
   receivers:
     otlp:
       protocols:
         grpc:
-          endpoint: "0.0.0.0:4317"  # OpenTelemetry gRPC endpoint
+          endpoint: "0.0.0.0:4317"
         http:
-          endpoint: "0.0.0.0:4318"  # OpenTelemetry HTTP endpoint
+          endpoint: "0.0.0.0:4318"
 
 querier:
   query_live_store: false
 
 ingester:
-  max_block_duration: 5m  # How long to batch traces before flushing
+  max_block_duration: 5m
 
-# Compactor optimizes trace storage
 compactor:
   compaction:
-    block_retention: 48h  # How long to keep traces
+    block_retention: 192h  # 8 days — buffer so "Last 7 days" never hits the limit
 
-# Storage configuration using local filesystem
 storage:
   trace:
     backend: local
     wal:
-      path: /var/tempo/wal  # Write-ahead log location
+      path: /var/tempo/wal
     local:
-      path: /var/tempo/blocks  # Block storage location
+      path: /var/tempo/blocks
 
-# Metrics generator creates service graphs and span metrics
 metrics_generator:
   registry:
+    stale_duration: 2h  # keep series alive 2h after last span — prevents gaps for hourly jobs
     external_labels:
       source: tempo
   storage:
@@ -47,15 +40,27 @@ metrics_generator:
     remote_write:
       - url: http://prometheus:9090/api/v1/write
         send_exemplars: true
+  traces_storage:
+    path: /var/tempo/generator/traces
+  processor:
+    local_blocks:
+      filter_server_spans: false
+      complete_block_timeout: 24h  # keep local blocks 24 h so traceqlMetrics panels have history
+    span_metrics:
+      dimensions:
+        - service.name
 
-# Query frontend handles search and trace queries
+# Enable local-blocks for traceqlMetrics and span-metrics for Prometheus error rate / latency
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [local-blocks, span-metrics]
+
 query_frontend:
-  rf1_after: "1999-01-01T00:00:00Z"
   search:
     duration_slo: 5s
-  # mcp_server:
-  #   enabled: true
-  # multi_tenant_queries_enabled: true
+  metrics:
+    max_duration: 192h  # 8 days — buffer so "Last 7 days" never hits the limit
 
 usage_report:
   reporting_enabled: false
