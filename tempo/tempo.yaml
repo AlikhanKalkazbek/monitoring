@@ -47,8 +47,10 @@ metrics_generator:
       filter_server_spans: false
       complete_block_timeout: 24h  # keep local blocks 24 h so traceqlMetrics panels have history
     span_metrics:
+      histogram_buckets: [0.1, 0.5, 1, 2, 5, 10, 30, 60, 120, 300, 600]
       dimensions:
         - service.name
+        - hangfire.job.attempt
 
 # Enable local-blocks for traceqlMetrics and span-metrics for Prometheus error rate / latency
 overrides:
