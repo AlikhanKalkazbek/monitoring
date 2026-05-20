@@ -79,20 +79,20 @@ services:
 
   
   node-exporter:
-      image: prom/node-exporter:v1.11.1
-      container_name: node-exporter
-      restart: unless-stopped
-      command:
-        - '--path.rootfs=/rootfs'
-        - '--path.procfs=/host/proc'
-        - '--path.sysfs=/host/sys'
-      networks:
-        - monitoring
-      pid: host
-      volumes:
-        - /proc:/host/proc:ro
-        - /sys:/host/sys:ro
-        - /:/rootfs:ro
+    image: prom/node-exporter:v1.11.1
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/rootfs'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+    networks:
+      - monitoring
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
 
 networks:
   monitoring:
