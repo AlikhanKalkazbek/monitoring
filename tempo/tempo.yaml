@@ -53,12 +53,35 @@ metrics_generator:
         - hangfire.job.type
         - hangfire.job.method
         - hangfire.job.attempt
+        # "Dirty run" flag set by TelemetryExceptions.MarkRootDirty: the root span stayed OK
+        # but an exception was recorded somewhere inside (handled per-item job errors,
+        # hub-swallowed exceptions). Cardinality 2 (true/absent).
+        - error.internal
+      # .NET 9 built-in SignalR spans ("{HubFullTypeName}/{Method}", scope
+      # Microsoft.AspNetCore.SignalR.Server) duplicate SignalRTracingHubFilter's
+      # "SignalR {Hub}.{Method}" spans — both are SPAN_KIND_SERVER, so each hub
+      # invocation counted twice in span metrics ("Inbound Requests" etc.).
+      # Excluded from METRICS only; the span stays in the trace (it is the trace
+      # root — dropping it in the collector would orphan the whole trace).
+      filter_policies:
+        - exclude:
+            match_type: regex
+            attributes:
+              - key: name
+                value: "^[A-Za-z0-9_.]+Hub/[A-Za-z0-9_]+$"
 
-# Enable local-blocks for traceqlMetrics and span-metrics for Prometheus error rate / latency
+# Enable local-blocks for traceqlMetrics, span-metrics for Prometheus error rate / latency,
+# and service-graphs for the Grafana Service Graph (traces_service_graph_* metrics; edges to
+# uninstrumented peers like PostgreSQL / Kcell PBX come from CLIENT-span db.*/peer.service attrs).
 overrides:
   defaults:
     metrics_generator:
-      processors: [local-blocks, span-metrics]
+      processors: [local-blocks, span-metrics, service-graphs]
+    global:
+      # Default 5 MB drops long chatty jobs (CreatePenyaJob: 234 s, >5.6k spans discarded
+      # as trace_too_large — trace vanished while span metrics still counted the run).
+      # 20 MB gives ~4x headroom; watch tempo_discarded_spans_total{reason="trace_too_large"}.
+      max_bytes_per_trace: 20971520
 
 query_frontend:
   search:

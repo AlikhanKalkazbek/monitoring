@@ -12,6 +12,14 @@ datasources:
     basicAuth: false
     jsonData:
       httpMethod: GET
+      # Exemplar dots on latency panels link straight to the trace in Tempo.
+      # Two label spellings: Tempo metrics-generator writes "traceID",
+      # the collector's prometheus exporter (OpenMetrics) writes "trace_id".
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: tempo
+        - name: trace_id
+          datasourceUid: tempo
 
   - name: Tempo
     type: tempo

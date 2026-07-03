@@ -12,6 +12,16 @@ processors:
     timeout: 1s
     send_batch_size: 1024
 
+  # Drop noise spans emitted by the LinkEd app-service tracing interceptor.
+  # "<Service>.L" spans are localization lookups: L() is a virtual base-class method,
+  # so Castle class proxies intercept it on every dynamic-API call — pure noise.
+  # Central policy: extend the conditions list here instead of adding app-side filters.
+  filter/noise-spans:
+    error_mode: ignore
+    traces:
+      span:
+        - 'instrumentation_scope.name == "LinkEd.Web.Mvc" and IsMatch(name, "^[A-Za-z0-9_]+\\.L$")'
+
   # Group spans by tenant for better batching
   # groupbytrace:
   #   wait_duration: 1s
@@ -34,6 +44,9 @@ exporters:
     endpoint: 0.0.0.0:8889
     resource_to_telemetry_conversion:
       enabled: true  # forwards resource attrs (deployment.environment, tenant.id, host.name) as Prometheus labels
+    # OpenMetrics exposition is required for exemplars (trace-id dots on latency panels);
+    # plain Prometheus text format silently drops them.
+    enable_open_metrics: true
 
   otlp/tempo:
     endpoint: tempo:4317
@@ -71,7 +84,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [filter/noise-spans, batch]
       exporters: [otlp/tempo]
     metrics:
       receivers: [otlp]
